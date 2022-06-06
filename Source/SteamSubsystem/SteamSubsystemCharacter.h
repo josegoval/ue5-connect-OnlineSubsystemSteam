@@ -69,13 +69,20 @@ public:
 	void ConfigureOnlineSubsystem();
 
 protected:
-	FName GameSessionName = "SessionNameForGameDoNotRepeat";
+	FName GameSessionName = TEXT("SessionNameForGameDoNotRepeat");
 
 	UFUNCTION(BlueprintCallable)
 	void CreateGameSession();
 
+	UFUNCTION(BlueprintCallable)
+	void JoinGameSession();
+
 private:
-	void OnCreateSessionCompleteCallback(FName SessionName, bool bWasSuccessful);
+	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
+	void OnFindSessionsComplete(bool bWasSuccessful);
 
 	FOnCreateSessionCompleteDelegate OnCreateSessionCompleteDelegate;
+	FOnFindSessionsCompleteDelegate OnFindSessionsCompleteDelegate;
+
+	TSharedPtr<FOnlineSessionSearch> SearchSettings;
 };

@@ -15,7 +15,9 @@
 
 ASteamSubsystemCharacter::ASteamSubsystemCharacter():
 	OnCreateSessionCompleteDelegate(
-		FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionCompleteCallback))
+		FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete)),
+	OnFindSessionsCompleteDelegate(
+		FOnFindSessionsCompleteDelegate::CreateUObject(this, &ThisClass::OnFindSessionsComplete))
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -130,7 +132,24 @@ void ASteamSubsystemCharacter::CreateGameSession()
 	OnlineSessionInterface->CreateSession(*PlayerHostingNum, GameSessionName, *OnlineSessionSettings);
 }
 
-void ASteamSubsystemCharacter::OnCreateSessionCompleteCallback(const FName SessionName, const bool bWasSuccessful)
+void ASteamSubsystemCharacter::JoinGameSession()
+{
+	if (!OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+
+	OnlineSessionInterface->AddOnFindSessionsCompleteDelegate_Handle(OnFindSessionsCompleteDelegate);
+
+	const auto SearchingPlayerId = GetWorld()->GetFirstLocalPlayerFromController()->GetPreferredUniqueNetId();
+	SearchSettings = MakeShareable(new FOnlineSessionSearch());
+	SearchSettings->bIsLanQuery = false;
+	SearchSettings->MaxSearchResults = 10000;
+	SearchSettings->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
+	OnlineSessionInterface->FindSessions(*SearchingPlayerId, SearchSettings.ToSharedRef());
+}
+
+void ASteamSubsystemCharacter::OnCreateSessionComplete(const FName SessionName, const bool bWasSuccessful)
 {
 	if (!GEngine)
 	{
@@ -150,6 +169,28 @@ void ASteamSubsystemCharacter::OnCreateSessionCompleteCallback(const FName Sessi
 	                                 FColor::Green,
 	                                 FString::Printf(TEXT("The session %s was created"),
 	                                                 *SessionName.ToString()));
+}
+
+void ASteamSubsystemCharacter::OnFindSessionsComplete(bool bWasSuccessful)
+{
+	if (!bWasSuccessful || !GEngine)
+	{
+		return;
+	}
+
+	for (auto SearchResult : SearchSettings->SearchResults)
+	{
+		const FString Id = SearchResult.GetSessionIdStr();
+		const FString Username = SearchResult.Session.OwningUserName;
+
+		GEngine->AddOnScreenDebugMessage(
+			-1,
+			15.f,
+			FColor::Cyan,
+			FString::Printf(TEXT("Session Id: %s from Username: %s"),
+			                *Id, *Username)
+		);
+	}
 }
 
 void ASteamSubsystemCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
