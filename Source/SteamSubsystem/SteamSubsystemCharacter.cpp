@@ -2,17 +2,20 @@
 
 #include "SteamSubsystemCharacter.h"
 #include "Camera/CameraComponent.h"
+#include "OnlineSessionSettings.h"
+#include "Interfaces/OnlineSessionInterface.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/InputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
-#include "OnlineSubsystem.h"
 
 //////////////////////////////////////////////////////////////////////////
 // ASteamSubsystemCharacter
 
-ASteamSubsystemCharacter::ASteamSubsystemCharacter()
+ASteamSubsystemCharacter::ASteamSubsystemCharacter():
+	OnCreateSessionCompleteDelegate(
+		FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionCompleteCallback))
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -45,19 +48,14 @@ ASteamSubsystemCharacter::ASteamSubsystemCharacter()
 
 	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
-	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName); // Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
+	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
+	// Attach the camera to the end of the boom and let the boom adjust to match the controller orientation
 	FollowCamera->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
-	
-	const IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
-	if(!OnlineSubsystem) return;
-	OnlineSessionInterface = OnlineSubsystem->GetSessionInterface();
-	if(!GEngine) return;
-	GEngine->AddOnScreenDebugMessage(-1, 15.f, FColor::Blue,
-	                                 FString::Printf(
-		                                 TEXT("Found subsystem %s"), *OnlineSubsystem->GetSubsystemName().ToString()));
+
+	ConfigureOnlineSubsystem();
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -84,6 +82,74 @@ void ASteamSubsystemCharacter::SetupPlayerInputComponent(class UInputComponent* 
 	// handle touch devices
 	PlayerInputComponent->BindTouch(IE_Pressed, this, &ASteamSubsystemCharacter::TouchStarted);
 	PlayerInputComponent->BindTouch(IE_Released, this, &ASteamSubsystemCharacter::TouchStopped);
+}
+
+void ASteamSubsystemCharacter::ConfigureOnlineSubsystem()
+{
+	const IOnlineSubsystem* OnlineSubsystem = IOnlineSubsystem::Get();
+	if (!OnlineSubsystem)
+	{
+		return;
+	}
+	OnlineSessionInterface = OnlineSubsystem->GetSessionInterface();
+	if (!GEngine)
+	{
+		return;
+	}
+	GEngine->AddOnScreenDebugMessage(
+		-1,
+		15.f, FColor::Blue,
+		FString::Printf(
+			TEXT("Found subsystem %s"),
+			*OnlineSubsystem->GetSubsystemName().ToString()));
+}
+
+void ASteamSubsystemCharacter::CreateGameSession()
+{
+	if (!OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+
+
+	if (OnlineSessionInterface->GetNamedSession(GameSessionName))
+	{
+		OnlineSessionInterface->DestroySession(GameSessionName);
+	}
+
+	OnlineSessionInterface->AddOnCreateSessionCompleteDelegate_Handle(OnCreateSessionCompleteDelegate);
+
+	const auto PlayerHostingNum = GetWorld()->GetFirstLocalPlayerFromController()->GetPreferredUniqueNetId();
+	const TSharedPtr<FOnlineSessionSettings> OnlineSessionSettings = MakeShareable(new FOnlineSessionSettings());
+	OnlineSessionSettings->bShouldAdvertise = true;
+	OnlineSessionSettings->bUsesPresence = true;
+	OnlineSessionSettings->NumPublicConnections = 4;
+	OnlineSessionSettings->bAllowJoinViaPresence = true;
+	OnlineSessionSettings->bAllowJoinInProgress = true;
+	OnlineSessionSettings->bIsLANMatch = false;
+	OnlineSessionInterface->CreateSession(*PlayerHostingNum, GameSessionName, *OnlineSessionSettings);
+}
+
+void ASteamSubsystemCharacter::OnCreateSessionCompleteCallback(const FName SessionName, const bool bWasSuccessful)
+{
+	if (!GEngine)
+	{
+		return;
+	}
+	if (!bWasSuccessful)
+	{
+		GEngine->AddOnScreenDebugMessage(-1,
+		                                 15.f,
+		                                 FColor::Red,
+		                                 FString(TEXT("The session couldn't be created")));
+		return;
+	}
+
+	GEngine->AddOnScreenDebugMessage(-1,
+	                                 15.f,
+	                                 FColor::Green,
+	                                 FString::Printf(TEXT("The session %s was created"),
+	                                                 *SessionName.ToString()));
 }
 
 void ASteamSubsystemCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
@@ -124,12 +190,12 @@ void ASteamSubsystemCharacter::MoveForward(float Value)
 
 void ASteamSubsystemCharacter::MoveRight(float Value)
 {
-	if ( (Controller != nullptr) && (Value != 0.0f) )
+	if ((Controller != nullptr) && (Value != 0.0f))
 	{
 		// find out which way is right
 		const FRotator Rotation = Controller->GetControlRotation();
 		const FRotator YawRotation(0, Rotation.Yaw, 0);
-	
+
 		// get right vector 
 		const FVector Direction = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 		// add movement in that direction

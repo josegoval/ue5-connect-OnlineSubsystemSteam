@@ -3,7 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "OnlineSubsystem.h"
 #include "GameFramework/Character.h"
+#include "Interfaces/OnlineSessionInterface.h"
 #include "SteamSubsystemCharacter.generated.h"
 
 UCLASS(config=Game)
@@ -26,7 +28,6 @@ public:
 	float TurnRateGamepad;
 
 protected:
-
 	/** Called for forwards/backward input */
 	void MoveForward(float Value);
 
@@ -63,6 +64,18 @@ public:
 	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 public:
-	TSharedPtr<class IOnlineSession, ESPMode::ThreadSafe> OnlineSessionInterface;
-};
+	IOnlineSessionPtr OnlineSessionInterface;
 
+	void ConfigureOnlineSubsystem();
+
+protected:
+	FName GameSessionName = "SessionNameForGameDoNotRepeat";
+
+	UFUNCTION(BlueprintCallable)
+	void CreateGameSession();
+
+private:
+	void OnCreateSessionCompleteCallback(FName SessionName, bool bWasSuccessful);
+
+	FOnCreateSessionCompleteDelegate OnCreateSessionCompleteDelegate;
+};
