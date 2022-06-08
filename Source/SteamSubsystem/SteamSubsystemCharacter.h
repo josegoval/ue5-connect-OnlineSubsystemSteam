@@ -70,6 +70,8 @@ public:
 
 protected:
 	FName GameSessionName = TEXT("SessionNameForGameDoNotRepeat");
+	FName MatchTypeKey = TEXT("MatchType");
+	FString MatchTypeValue = TEXT("MatchType");
 
 	UFUNCTION(BlueprintCallable)
 	void CreateGameSession();
@@ -80,9 +82,11 @@ protected:
 private:
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	void OnFindSessionsComplete(bool bWasSuccessful);
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
 
 	FOnCreateSessionCompleteDelegate OnCreateSessionCompleteDelegate;
 	FOnFindSessionsCompleteDelegate OnFindSessionsCompleteDelegate;
+	FOnJoinSessionCompleteDelegate OnJoinSessionCompleteDelegate;
 
 	TSharedPtr<FOnlineSessionSearch> SearchSettings;
 };

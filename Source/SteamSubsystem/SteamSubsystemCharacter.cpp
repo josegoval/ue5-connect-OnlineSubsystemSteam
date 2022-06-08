@@ -17,7 +17,9 @@ ASteamSubsystemCharacter::ASteamSubsystemCharacter():
 	OnCreateSessionCompleteDelegate(
 		FOnCreateSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnCreateSessionComplete)),
 	OnFindSessionsCompleteDelegate(
-		FOnFindSessionsCompleteDelegate::CreateUObject(this, &ThisClass::OnFindSessionsComplete))
+		FOnFindSessionsCompleteDelegate::CreateUObject(this, &ThisClass::OnFindSessionsComplete)),
+	OnJoinSessionCompleteDelegate(
+		FOnJoinSessionCompleteDelegate::CreateUObject(this, &ThisClass::OnJoinSessionComplete))
 {
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
@@ -129,6 +131,8 @@ void ASteamSubsystemCharacter::CreateGameSession()
 	OnlineSessionSettings->bAllowJoinViaPresence = true;
 	OnlineSessionSettings->bAllowJoinInProgress = true;
 	OnlineSessionSettings->bIsLANMatch = false;
+	OnlineSessionSettings->bUseLobbiesIfAvailable = true;
+	OnlineSessionSettings->Set(MatchTypeKey, MatchTypeValue, EOnlineDataAdvertisementType::ViaOnlineServiceAndPing);
 	OnlineSessionInterface->CreateSession(*PlayerHostingNum, GameSessionName, *OnlineSessionSettings);
 }
 
@@ -167,30 +171,111 @@ void ASteamSubsystemCharacter::OnCreateSessionComplete(const FName SessionName, 
 	GEngine->AddOnScreenDebugMessage(-1,
 	                                 15.f,
 	                                 FColor::Green,
-	                                 FString::Printf(TEXT("The session %s was created"),
+	                                 FString::Printf(TEXT("The session %s was created, travelling to lobby..."),
 	                                                 *SessionName.ToString()));
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	World->ServerTravel(FString("/Game/ThirdPerson/Maps/Lobby?listen"));
 }
 
 void ASteamSubsystemCharacter::OnFindSessionsComplete(bool bWasSuccessful)
 {
-	if (!bWasSuccessful || !GEngine)
+	if (!bWasSuccessful || !GEngine || !OnlineSessionInterface.IsValid())
 	{
 		return;
 	}
 
-	for (auto SearchResult : SearchSettings->SearchResults)
+	for (const auto SearchResult : SearchSettings->SearchResults)
 	{
-		const FString Id = SearchResult.GetSessionIdStr();
-		const FString Username = SearchResult.Session.OwningUserName;
+		const FString SessionId = SearchResult.GetSessionIdStr();
+		const FString OwningUserName = SearchResult.Session.OwningUserName;
+		const auto LocalUserId = GetWorld()->GetFirstLocalPlayerFromController()->GetPreferredUniqueNetId();
 
-		GEngine->AddOnScreenDebugMessage(
-			-1,
-			15.f,
-			FColor::Cyan,
-			FString::Printf(TEXT("Session Id: %s from Username: %s"),
-			                *Id, *Username)
+		GEngine->AddOnScreenDebugMessage(-1,
+		                                 15.f,
+		                                 FColor::Purple,
+		                                 FString::Printf(
+			                                 TEXT("Session found %s owned by %s"),
+			                                 *SessionId, *OwningUserName)
 		);
+
+		FString MatchType;
+		SearchResult.Session.SessionSettings.Get(MatchTypeKey, MatchType);
+		if (MatchType != MatchTypeValue)
+		{
+			GEngine->AddOnScreenDebugMessage(-1,
+			                                 15.f,
+			                                 FColor::Red,
+			                                 FString::Printf(
+				                                 TEXT("This session has a different MatchType: %s"),
+				                                 *MatchType));
+			continue;
+		}
+
+		GEngine->AddOnScreenDebugMessage(-1,
+		                                 15.f,
+		                                 FColor::Purple,
+		                                 FString(
+			                                 TEXT("Session with desired MatchType found. Joining the match...")
+		                                 ));
+		// Try to join the session
+		OnlineSessionInterface->AddOnJoinSessionCompleteDelegate_Handle(OnJoinSessionCompleteDelegate);
+		OnlineSessionInterface->JoinSession(
+			*LocalUserId,
+			GameSessionName,
+			SearchResult
+		);
+
+		return;
 	}
+}
+
+void ASteamSubsystemCharacter::OnJoinSessionComplete(const FName SessionName, EOnJoinSessionCompleteResult::Type Result)
+{
+	if (!OnlineSessionInterface.IsValid())
+	{
+		return;
+	}
+
+	if (Result != EOnJoinSessionCompleteResult::Success)
+	{
+		GEngine->AddOnScreenDebugMessage(-1,
+		                                 15.f,
+		                                 FColor::Red,
+		                                 FString(
+			                                 TEXT("JoinSessionCompleteResult was not successful")
+		                                 ));
+		return;
+	}
+
+	FString ConnectInfo;
+	if (!OnlineSessionInterface->GetResolvedConnectString(SessionName, ConnectInfo))
+	{
+		GEngine->AddOnScreenDebugMessage(-1,
+		                                 15.f,
+		                                 FColor::Red,
+		                                 FString::Printf(
+			                                 TEXT("Couldn't join the session named %s."), *SessionName.ToString()
+		                                 ));
+		return;
+	}
+
+	APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
+	if (!PlayerController)
+	{
+		GEngine->AddOnScreenDebugMessage(-1,
+		                                 15.f,
+		                                 FColor::Red,
+		                                 FString(
+			                                 TEXT("No player controller found.")
+		                                 ));
+		return;
+	}
+
+	PlayerController->ClientTravel(ConnectInfo, TRAVEL_Absolute);
 }
 
 void ASteamSubsystemCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
