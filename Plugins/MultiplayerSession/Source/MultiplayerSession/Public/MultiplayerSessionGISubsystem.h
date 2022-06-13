@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "OnlineSessionSettings.h"
 #include "Interfaces/OnlineSessionInterface.h"
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "MultiplayerSessionGISubsystem.generated.h"
@@ -17,7 +18,33 @@ class MULTIPLAYERSESSION_API UMultiplayerSessionGISubsystem : public UGameInstan
 
 public:
 	UMultiplayerSessionGISubsystem();
+
+	// Public API entry points 
+	void CreateSession(int32 MaxPlayers, FString MatchType);
+	void FindSessions(int32 MaxResults);
+	void JoinSession(const FOnlineSessionSearchResult& SearchResult);
+	void DestroySession();
+	void StartSession();
+	
 protected:
+	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
+	void OnFindSessionComplete(bool bWasSuccessful);
+	void OnJoinSessionComplete(FName SessionName, EOnJoinSessionCompleteResult::Type Result);
+	void OnDestroySessionComplete(FName SessionName, bool bWasSuccessful);
+	void OnStartSessionComplete(FName SessionName, bool bWasSuccessful);
+
 private:
 	IOnlineSessionPtr SessionInterface;
+
+	// SessionInterface Delegate(s) and DelegateHandler(s)
+	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;
+	FDelegateHandle CreateSessionCompleteDelegateHandle;
+	FOnFindSessionsCompleteDelegate FindSessionsCompleteDelegate;
+	FDelegateHandle FindSessionsCompleteDelegateHandle;
+	FOnJoinSessionCompleteDelegate JoinSessionCompleteDelegate;
+	FDelegateHandle JoinSessionCompleteDelegateHandle;
+	FOnDestroySessionCompleteDelegate DestroySessionCompleteDelegate;
+	FDelegateHandle DestroySessionCompleteDelegateHandle;
+	FOnStartSessionCompleteDelegate StartSessionCompleteDelegate;
+	FDelegateHandle StartSessionCompleteDelegateHandle;
 };
