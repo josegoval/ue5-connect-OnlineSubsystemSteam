@@ -89,4 +89,9 @@ private:
 	FOnJoinSessionCompleteDelegate OnJoinSessionCompleteDelegate;
 
 	TSharedPtr<FOnlineSessionSearch> SearchSettings;
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FGameStateTimeOfDayChanged, float, Houer, int32, Minute, int32, Sec);
+
+	UPROPERTY(BlueprintAssignable)
+	FGameStateTimeOfDayChanged OnTimeUpdated;
 };
