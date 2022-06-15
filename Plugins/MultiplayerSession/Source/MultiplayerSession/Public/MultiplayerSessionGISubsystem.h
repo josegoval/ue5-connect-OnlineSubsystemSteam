@@ -34,6 +34,7 @@ protected:
 
 private:
 	IOnlineSessionPtr SessionInterface;
+	TSharedPtr<FOnlineSessionSettings> LastSessionSettings;
 
 	// SessionInterface Delegate(s) and DelegateHandler(s)
 	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;

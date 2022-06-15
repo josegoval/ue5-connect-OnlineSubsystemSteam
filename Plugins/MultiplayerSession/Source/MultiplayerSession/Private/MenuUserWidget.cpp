@@ -6,30 +6,13 @@
 #include "MultiplayerSessionGISubsystem.h"
 #include "Components/Button.h"
 
-void UMenuUserWidget::Setup()
+void UMenuUserWidget::Setup(const int32 MaxPlayers, const FString MatchType)
 {
-	AddToViewport();
-	SetVisibility(ESlateVisibility::Visible);
-	bIsFocusable = true;
-
-	const UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-	APlayerController* PlayerController = World->GetFirstPlayerController();
-	if (!PlayerController)
-	{
-		return;
-	}
-	// Set InputMode and Cursor
-	FInputModeUIOnly InputMode;
-	InputMode.SetWidgetToFocus(TakeWidget());
-	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-	PlayerController->SetInputMode(InputMode);
-	PlayerController->SetShowMouseCursor(true);
-
+	SavedMaxPlayers = MaxPlayers;
+	SavedMatchType = MatchType;
+	ActivateMenu();
 	ConfigureWidgetButtonBindings();
+	ConfigureMultiplayerSessionGISubsystem();
 }
 
 bool UMenuUserWidget::Initialize()
@@ -42,6 +25,12 @@ bool UMenuUserWidget::Initialize()
 	ConfigureWidgetButtonBindings();
 
 	return true;
+}
+
+void UMenuUserWidget::OnLevelRemovedFromWorld(ULevel* InLevel, UWorld* InWorld)
+{
+	DeactivateMenu();
+	Super::OnLevelRemovedFromWorld(InLevel, InWorld);
 }
 
 void UMenuUserWidget::HandleClickHostButton()
@@ -61,7 +50,14 @@ void UMenuUserWidget::HandleClickHostButton()
 	{
 		return;
 	}
-	MultiplayerSessionGISubsystem->CreateSession(4, TEXT("FreeForAll"));
+	MultiplayerSessionGISubsystem->CreateSession(SavedMaxPlayers, SavedMatchType);
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	World->ServerTravel(FString(TEXT("/Game/ThirdPerson/Maps/Lobby?listen")));
 }
 
 void UMenuUserWidget::HandleClickJoinButton()
@@ -82,6 +78,58 @@ void UMenuUserWidget::HandleClickJoinButton()
 	// 	return;
 	// }
 	// MultiplayerSessionGISubsystem->JoinSession();
+}
+
+void UMenuUserWidget::ActivateMenu()
+{
+	AddToViewport();
+	SetVisibility(ESlateVisibility::Visible);
+	bIsFocusable = true;
+	EnableUIControls();
+}
+
+void UMenuUserWidget::DeactivateMenu()
+{
+	RemoveFromParent();
+	RemoveFromViewport();
+	DisableUIControls();
+}
+
+void UMenuUserWidget::EnableUIControls()
+{
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	APlayerController* PlayerController = World->GetFirstPlayerController();
+	if (!PlayerController)
+	{
+		return;
+	}
+	// Set InputMode and Cursor
+	FInputModeUIOnly InputMode;
+	InputMode.SetWidgetToFocus(TakeWidget());
+	InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	PlayerController->SetInputMode(InputMode);
+	PlayerController->SetShowMouseCursor(true);
+}
+
+void UMenuUserWidget::DisableUIControls()
+{
+	const UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	APlayerController* PlayerController = World->GetFirstPlayerController();
+	if (!PlayerController)
+	{
+		return;
+	}
+	const FInputModeGameOnly InputMode;
+	PlayerController->SetInputMode(InputMode);
+	PlayerController->SetShowMouseCursor(false);
 }
 
 void UMenuUserWidget::ConfigureMultiplayerSessionGISubsystem()
