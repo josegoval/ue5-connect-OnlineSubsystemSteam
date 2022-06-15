@@ -17,4 +17,25 @@ class MULTIPLAYERSESSION_API UMenuUserWidget : public UUserWidget
 public:
 	UFUNCTION(BlueprintCallable)
 	void Setup();
+
+protected:
+	virtual bool Initialize() override;
+
+private:
+	UPROPERTY(meta = (BindWidget))
+	class UButton* HostButton;
+	UPROPERTY(meta = (BindWidget))
+	UButton* JoinButton;
+
+
+	UPROPERTY()
+	class UMultiplayerSessionGISubsystem* MultiplayerSessionGISubsystem;
+
+	UFUNCTION()
+	void HandleClickHostButton();
+	UFUNCTION()
+	void HandleClickJoinButton();
+
+	void ConfigureMultiplayerSessionGISubsystem();
+	void ConfigureWidgetButtonBindings();
 };
