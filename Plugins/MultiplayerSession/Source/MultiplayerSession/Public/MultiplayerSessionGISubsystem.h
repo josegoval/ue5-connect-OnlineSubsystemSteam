@@ -9,6 +9,13 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCreateSessionDelegate, bool, bWasSuccessful);
 
+DECLARE_MULTICAST_DELEGATE_TwoParams(FOnFindSessionDelegate, const TArray<FOnlineSessionSearchResult>& SearchResults,
+                                     bool bWasSuccessful);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnJoinSessionDelegate, EOnJoinSessionCompleteResult::Type Result);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDestroySessionDelegate, bool, bWasSuccessful);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStartSessionDelegate, bool, bWasSuccessful);
+
 /**
  * 
  */
@@ -28,6 +35,10 @@ public:
 	void StartSession();
 
 	FOnCreateSessionDelegate OnCreateSessionDelegate;
+	FOnFindSessionDelegate OnFindSessionDelegate;
+	FOnJoinSessionDelegate OnJoinSessionDelegate;
+	FOnDestroySessionDelegate OnDestroySessionDelegate;
+	FOnStartSessionDelegate OnStartSessionDelegate;
 
 protected:
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);

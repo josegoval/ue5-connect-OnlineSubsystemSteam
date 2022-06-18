@@ -58,6 +58,22 @@ void UMenuUserWidget::OnCreateSession(bool bWasSuccessful)
 	World->ServerTravel(FString(TEXT("/Game/ThirdPerson/Maps/Lobby?listen")));
 }
 
+void UMenuUserWidget::OnFindSession(const TArray<FOnlineSessionSearchResult>& SearchResults, bool bWasSuccessful)
+{
+}
+
+void UMenuUserWidget::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
+{
+}
+
+void UMenuUserWidget::OnDestroySession(bool bWasSuccessful)
+{
+}
+
+void UMenuUserWidget::OnStartSession(bool bWasSuccessful)
+{
+}
+
 void UMenuUserWidget::HandleClickHostButton()
 {
 	if (!MultiplayerSessionGISubsystem)
@@ -160,6 +176,14 @@ void UMenuUserWidget::ConfigureMultiplayerSessionGISubsystem()
 	}
 	MultiplayerSessionGISubsystem->OnCreateSessionDelegate.AddDynamic(
 		this, &ThisClass::OnCreateSession);
+	MultiplayerSessionGISubsystem->OnFindSessionDelegate.AddUObject(
+		this, &ThisClass::OnFindSession);
+	MultiplayerSessionGISubsystem->OnJoinSessionDelegate.AddUObject(
+		this, &ThisClass::OnJoinSession);
+	MultiplayerSessionGISubsystem->OnDestroySessionDelegate.AddDynamic(
+		this, &ThisClass::OnDestroySession);
+	MultiplayerSessionGISubsystem->OnStartSessionDelegate.AddDynamic(
+		this, &ThisClass::OnStartSession);
 }
 
 void UMenuUserWidget::ConfigureWidgetButtonBindings()
