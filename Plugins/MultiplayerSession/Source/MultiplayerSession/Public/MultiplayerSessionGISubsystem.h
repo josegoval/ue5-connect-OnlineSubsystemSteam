@@ -29,7 +29,7 @@ public:
 
 	// Public API entry points 
 	void CreateSession(int32 MaxPlayers, FString MatchType);
-	void FindSessions(int32 MaxResults);
+	void FindSessions(const int32 MaxResults);
 	void JoinSession(const FOnlineSessionSearchResult& SearchResult);
 	void DestroySession();
 	void StartSession();
@@ -40,6 +40,10 @@ public:
 	FOnDestroySessionDelegate OnDestroySessionDelegate;
 	FOnStartSessionDelegate OnStartSessionDelegate;
 
+	const FName MATCH_TYPE_QUERY_KEY = FName(TEXT("MatchType"));
+
+	// Utils
+	bool GetTravelDestination(FString& StringToCopyDestinationAddress);
 protected:
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
 	void OnFindSessionComplete(bool bWasSuccessful);
@@ -50,6 +54,7 @@ protected:
 private:
 	IOnlineSessionPtr SessionInterface;
 	TSharedPtr<FOnlineSessionSettings> LastSessionSettings;
+	TSharedPtr<FOnlineSessionSearch> LastSessionSearch;
 
 	// SessionInterface Delegate(s) and DelegateHandler(s)
 	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;
@@ -62,4 +67,7 @@ private:
 	FDelegateHandle DestroySessionCompleteDelegateHandle;
 	FOnStartSessionCompleteDelegate StartSessionCompleteDelegate;
 	FDelegateHandle StartSessionCompleteDelegateHandle;
+
+	// Utils
+	FUniqueNetIdRepl GetPlayerUniqueNetId() const;
 };

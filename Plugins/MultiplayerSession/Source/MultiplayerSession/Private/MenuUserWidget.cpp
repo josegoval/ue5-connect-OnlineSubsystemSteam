@@ -4,6 +4,7 @@
 #include "MenuUserWidget.h"
 
 #include "MultiplayerSessionGISubsystem.h"
+#include "OnlineSessionSettings.h"
 #include "Components/Button.h"
 
 void UMenuUserWidget::Setup(const int32 MaxPlayers, const FString MatchType)
@@ -60,10 +61,54 @@ void UMenuUserWidget::OnCreateSession(bool bWasSuccessful)
 
 void UMenuUserWidget::OnFindSession(const TArray<FOnlineSessionSearchResult>& SearchResults, bool bWasSuccessful)
 {
+	if (!MultiplayerSessionGISubsystem)
+	{
+		return;
+	}
+	if (!bWasSuccessful)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,
+			15.f,
+			FColor::Red,
+			FString(TEXT("No session found"))
+		);
+		return;
+	}
+
+	GEngine->AddOnScreenDebugMessage(
+		-1,
+		15.f,
+		FColor::Orange,
+		FString(TEXT("Before OnFindSession - Loop"))
+	);
+
+	FString SearchResultMatchType;
+	for (const FOnlineSessionSearchResult SearchResult : SearchResults)
+	{
+		SearchResult.Session.SessionSettings.Get(MultiplayerSessionGISubsystem->MATCH_TYPE_QUERY_KEY,
+		                                         SearchResultMatchType);
+		if (SearchResultMatchType != SavedMatchType)
+		{
+			continue;
+		}
+		return MultiplayerSessionGISubsystem->JoinSession(SearchResult);
+	}
 }
 
 void UMenuUserWidget::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
 {
+	APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
+	if (!PlayerController)
+	{
+		return;
+	}
+	FString DestinationAddress;
+	if (!MultiplayerSessionGISubsystem->GetTravelDestination(DestinationAddress))
+	{
+		return;
+	}
+	PlayerController->ClientTravel(DestinationAddress, TRAVEL_Absolute);
 }
 
 void UMenuUserWidget::OnDestroySession(bool bWasSuccessful)
@@ -85,22 +130,11 @@ void UMenuUserWidget::HandleClickHostButton()
 
 void UMenuUserWidget::HandleClickJoinButton()
 {
-	if (!GEngine)
+	if (!MultiplayerSessionGISubsystem)
 	{
 		return;
 	}
-	GEngine->AddOnScreenDebugMessage(
-		-1,
-		15.f,
-		FColor::Yellow,
-		FString(TEXT("JoinButton clicked"))
-	);
-
-	// if (!MultiplayerSessionGISubsystem)
-	// {
-	// 	return;
-	// }
-	// MultiplayerSessionGISubsystem->JoinSession();
+	MultiplayerSessionGISubsystem->FindSessions(10000);
 }
 
 void UMenuUserWidget::ActivateMenu()
