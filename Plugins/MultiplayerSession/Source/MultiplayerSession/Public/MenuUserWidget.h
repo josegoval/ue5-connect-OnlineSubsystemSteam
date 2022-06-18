@@ -22,6 +22,9 @@ protected:
 	virtual bool Initialize() override;
 	virtual void OnLevelRemovedFromWorld(ULevel* InLevel, UWorld* InWorld) override;
 
+	UFUNCTION()
+	void OnCreateSession(bool bWasSuccessful);
+
 private:
 	// Widget vars
 	UPROPERTY(meta = (BindWidget))

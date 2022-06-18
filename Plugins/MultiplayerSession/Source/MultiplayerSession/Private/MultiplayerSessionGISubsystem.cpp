@@ -87,6 +87,7 @@ void UMultiplayerSessionGISubsystem::CreateSession(int32 MaxPlayers, FString Mat
 	{
 		// Unbind the Delegate if something goes wrong
 		SessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegateHandle);
+		OnCreateSessionDelegate.Broadcast(false);
 	}
 }
 
@@ -108,6 +109,13 @@ void UMultiplayerSessionGISubsystem::StartSession()
 
 void UMultiplayerSessionGISubsystem::OnCreateSessionComplete(FName SessionName, bool bWasSuccessful)
 {
+	GEngine->AddOnScreenDebugMessage(
+		-1,
+		15.f,
+		FColor::Yellow,
+		FString(TEXT("OnCreateSessionComplete"))
+	);
+	OnCreateSessionDelegate.Broadcast(bWasSuccessful);
 }
 
 void UMultiplayerSessionGISubsystem::OnFindSessionComplete(bool bWasSuccessful)

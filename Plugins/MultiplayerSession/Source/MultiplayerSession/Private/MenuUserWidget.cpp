@@ -11,7 +11,6 @@ void UMenuUserWidget::Setup(const int32 MaxPlayers, const FString MatchType)
 	SavedMaxPlayers = MaxPlayers;
 	SavedMatchType = MatchType;
 	ActivateMenu();
-	ConfigureWidgetButtonBindings();
 	ConfigureMultiplayerSessionGISubsystem();
 }
 
@@ -33,7 +32,7 @@ void UMenuUserWidget::OnLevelRemovedFromWorld(ULevel* InLevel, UWorld* InWorld)
 	Super::OnLevelRemovedFromWorld(InLevel, InWorld);
 }
 
-void UMenuUserWidget::HandleClickHostButton()
+void UMenuUserWidget::OnCreateSession(bool bWasSuccessful)
 {
 	if (!GEngine)
 	{
@@ -42,22 +41,30 @@ void UMenuUserWidget::HandleClickHostButton()
 	GEngine->AddOnScreenDebugMessage(
 		-1,
 		15.f,
-		FColor::Yellow,
-		FString(TEXT("HostButton clicked"))
+		FColor::Purple,
+		FString::Printf(TEXT("Session was %s!"),
+		                bWasSuccessful ? TEXT("created") : TEXT("not created"))
 	);
 
-	if (!MultiplayerSessionGISubsystem)
+	if (!bWasSuccessful)
 	{
 		return;
 	}
-	MultiplayerSessionGISubsystem->CreateSession(SavedMaxPlayers, SavedMatchType);
-
 	UWorld* World = GetWorld();
 	if (!World)
 	{
 		return;
 	}
 	World->ServerTravel(FString(TEXT("/Game/ThirdPerson/Maps/Lobby?listen")));
+}
+
+void UMenuUserWidget::HandleClickHostButton()
+{
+	if (!MultiplayerSessionGISubsystem)
+	{
+		return;
+	}
+	MultiplayerSessionGISubsystem->CreateSession(SavedMaxPlayers, SavedMatchType);
 }
 
 void UMenuUserWidget::HandleClickJoinButton()
@@ -140,6 +147,19 @@ void UMenuUserWidget::ConfigureMultiplayerSessionGISubsystem()
 		return;
 	}
 	MultiplayerSessionGISubsystem = GameInstance->GetSubsystem<UMultiplayerSessionGISubsystem>();
+
+	if (!MultiplayerSessionGISubsystem)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,
+			15.f,
+			FColor::Red,
+			FString(TEXT("No MultiplayerSessionGISubsystem"))
+		);
+		return;
+	}
+	MultiplayerSessionGISubsystem->OnCreateSessionDelegate.AddDynamic(
+		this, &ThisClass::OnCreateSession);
 }
 
 void UMenuUserWidget::ConfigureWidgetButtonBindings()

@@ -7,6 +7,8 @@
 #include "Subsystems/GameInstanceSubsystem.h"
 #include "MultiplayerSessionGISubsystem.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCreateSessionDelegate, bool, bWasSuccessful);
+
 /**
  * 
  */
@@ -24,6 +26,8 @@ public:
 	void JoinSession(const FOnlineSessionSearchResult& SearchResult);
 	void DestroySession();
 	void StartSession();
+
+	FOnCreateSessionDelegate OnCreateSessionDelegate;
 
 protected:
 	void OnCreateSessionComplete(FName SessionName, bool bWasSuccessful);
