@@ -96,16 +96,16 @@ void ASteamSubsystemCharacter::ConfigureOnlineSubsystem()
 		return;
 	}
 	OnlineSessionInterface = OnlineSubsystem->GetSessionInterface();
-	if (!GEngine)
-	{
-		return;
-	}
-	GEngine->AddOnScreenDebugMessage(
-		-1,
-		15.f, FColor::Blue,
-		FString::Printf(
-			TEXT("Found subsystem %s"),
-			*OnlineSubsystem->GetSubsystemName().ToString()));
+	// if (!GEngine)
+	// {
+	// 	return;
+	// }
+	// GEngine->AddOnScreenDebugMessage(
+	// 	-1,
+	// 	15.f, FColor::Blue,
+	// 	FString::Printf(
+	// 		TEXT("Found subsystem %s"),
+	// 		*OnlineSubsystem->GetSubsystemName().ToString()));
 }
 
 void ASteamSubsystemCharacter::CreateGameSession()
