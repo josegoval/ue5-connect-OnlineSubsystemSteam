@@ -82,12 +82,6 @@ void UMenuUserWidget::OnFindSession(const TArray<FOnlineSessionSearchResult>& Se
 		return;
 	}
 
-	GEngine->AddOnScreenDebugMessage(
-		-1,
-		15.f,
-		FColor::Orange,
-		FString(TEXT("Before OnFindSession - Loop"))
-	);
 
 	FString SearchResultMatchType;
 	for (const FOnlineSessionSearchResult SearchResult : SearchResults)

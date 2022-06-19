@@ -30,13 +30,6 @@ UMultiplayerSessionGISubsystem::UMultiplayerSessionGISubsystem():
 
 void UMultiplayerSessionGISubsystem::CreateSession(int32 MaxPlayers, FString MatchType)
 {
-	GEngine->AddOnScreenDebugMessage(
-		-1,
-		15.f,
-		FColor::Green,
-		FString(TEXT("CreateSession Triggered"))
-	);
-
 	if (!SessionInterface.IsValid())
 	{
 		return;
@@ -95,13 +88,6 @@ void UMultiplayerSessionGISubsystem::FindSessions(const int32 MaxResults)
 		return;
 	}
 
-	GEngine->AddOnScreenDebugMessage(
-		-1,
-		15.f,
-		FColor::Orange,
-		FString(TEXT("FindSessions Triggered"))
-	);
-
 
 	FindSessionsCompleteDelegateHandle = SessionInterface->AddOnFindSessionsCompleteDelegate_Handle(
 		FindSessionsCompleteDelegate);
@@ -117,12 +103,6 @@ void UMultiplayerSessionGISubsystem::FindSessions(const int32 MaxResults)
 	LastSessionSearch->MaxSearchResults = MaxResults;
 	LastSessionSearch->QuerySettings.Set(SEARCH_PRESENCE, true, EOnlineComparisonOp::Equals);
 
-	GEngine->AddOnScreenDebugMessage(
-		-1,
-		15.f,
-		FColor::Orange,
-		FString(TEXT("Before JoinSessions - FindSessions"))
-	);
 
 	if (!SessionInterface->FindSessions(*SearchingPlayerNum, LastSessionSearch.ToSharedRef()))
 	{
@@ -137,14 +117,6 @@ void UMultiplayerSessionGISubsystem::JoinSession(const FOnlineSessionSearchResul
 	{
 		return;
 	}
-
-	GEngine->AddOnScreenDebugMessage(
-		-1,
-		15.f,
-		FColor::Orange,
-		FString(TEXT("JoinSessions Triggered"))
-	);
-
 
 	JoinSessionCompleteDelegateHandle = SessionInterface->AddOnJoinSessionCompleteDelegate_Handle(
 		JoinSessionCompleteDelegate);
@@ -193,13 +165,6 @@ void UMultiplayerSessionGISubsystem::OnCreateSessionComplete(FName SessionName, 
 	{
 		return;
 	}
-
-	GEngine->AddOnScreenDebugMessage(
-		-1,
-		15.f,
-		FColor::Yellow,
-		FString(TEXT("OnCreateSessionComplete"))
-	);
 
 	SessionInterface->ClearOnCreateSessionCompleteDelegate_Handle(CreateSessionCompleteDelegateHandle);
 	OnCreateSessionDelegate.Broadcast(bWasSuccessful);
