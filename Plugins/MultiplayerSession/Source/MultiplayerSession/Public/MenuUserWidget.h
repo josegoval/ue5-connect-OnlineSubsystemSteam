@@ -17,7 +17,9 @@ class MULTIPLAYERSESSION_API UMenuUserWidget : public UUserWidget
 
 public:
 	UFUNCTION(BlueprintCallable)
-	void Setup(const int32 MaxPlayers = 4, const FString MatchType = TEXT("FreeForAll"));
+	void Setup(const int32 MaxPlayers = 4,
+	           const FString MatchType = FString(TEXT("FreeForAll")),
+	           const FString PathToLobbyMap = FString(TEXT("/Game/ThirdPerson/Maps/Lobby")));
 
 protected:
 	virtual bool Initialize() override;
@@ -46,6 +48,7 @@ private:
 	// Session configuration
 	int32 SavedMaxPlayers = 4;
 	FString SavedMatchType = FString(TEXT("FreeForAll"));
+	FString SavedPathToLobbyMap = FString(TEXT(""));
 
 	UFUNCTION()
 	void HandleClickHostButton();

@@ -7,10 +7,11 @@
 #include "OnlineSessionSettings.h"
 #include "Components/Button.h"
 
-void UMenuUserWidget::Setup(const int32 MaxPlayers, const FString MatchType)
+void UMenuUserWidget::Setup(const int32 MaxPlayers, const FString MatchType, const FString PathToLobbyMap)
 {
 	SavedMaxPlayers = MaxPlayers;
 	SavedMatchType = MatchType;
+	SavedPathToLobbyMap = FString::Printf(TEXT("%s?listen"), *PathToLobbyMap);
 	ActivateMenu();
 	ConfigureMultiplayerSessionGISubsystem();
 }
@@ -56,7 +57,7 @@ void UMenuUserWidget::OnCreateSession(bool bWasSuccessful)
 	{
 		return;
 	}
-	World->ServerTravel(FString(TEXT("/Game/ThirdPerson/Maps/Lobby?listen")));
+	World->ServerTravel(SavedPathToLobbyMap);
 }
 
 void UMenuUserWidget::OnFindSession(const TArray<FOnlineSessionSearchResult>& SearchResults, bool bWasSuccessful)
