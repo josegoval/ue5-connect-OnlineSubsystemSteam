@@ -38,6 +38,7 @@ void UMenuUserWidget::OnCreateSession(bool bWasSuccessful)
 {
 	if (!GEngine)
 	{
+		HostButton->SetIsEnabled(true);
 		return;
 	}
 	GEngine->AddOnScreenDebugMessage(
@@ -50,11 +51,13 @@ void UMenuUserWidget::OnCreateSession(bool bWasSuccessful)
 
 	if (!bWasSuccessful)
 	{
+		HostButton->SetIsEnabled(true);
 		return;
 	}
 	UWorld* World = GetWorld();
 	if (!World)
 	{
+		HostButton->SetIsEnabled(true);
 		return;
 	}
 	World->ServerTravel(SavedPathToLobbyMap);
@@ -64,10 +67,12 @@ void UMenuUserWidget::OnFindSession(const TArray<FOnlineSessionSearchResult>& Se
 {
 	if (!MultiplayerSessionGISubsystem)
 	{
+		JoinButton->SetIsEnabled(true);
 		return;
 	}
 	if (!bWasSuccessful)
 	{
+		JoinButton->SetIsEnabled(true);
 		GEngine->AddOnScreenDebugMessage(
 			-1,
 			15.f,
@@ -95,18 +100,28 @@ void UMenuUserWidget::OnFindSession(const TArray<FOnlineSessionSearchResult>& Se
 		}
 		return MultiplayerSessionGISubsystem->JoinSession(SearchResult);
 	}
+
+	JoinButton->SetIsEnabled(true);
 }
 
 void UMenuUserWidget::OnJoinSession(EOnJoinSessionCompleteResult::Type Result)
 {
+	if (Result != EOnJoinSessionCompleteResult::Success)
+	{
+		JoinButton->SetIsEnabled(true);
+		return;
+	}
+
 	APlayerController* PlayerController = GetGameInstance()->GetFirstLocalPlayerController();
 	if (!PlayerController)
 	{
+		JoinButton->SetIsEnabled(true);
 		return;
 	}
 	FString DestinationAddress;
 	if (!MultiplayerSessionGISubsystem->GetTravelDestination(DestinationAddress))
 	{
+		JoinButton->SetIsEnabled(true);
 		return;
 	}
 	PlayerController->ClientTravel(DestinationAddress, TRAVEL_Absolute);
@@ -122,6 +137,8 @@ void UMenuUserWidget::OnStartSession(bool bWasSuccessful)
 
 void UMenuUserWidget::HandleClickHostButton()
 {
+	HostButton->SetIsEnabled(false);
+
 	if (!MultiplayerSessionGISubsystem)
 	{
 		return;
@@ -131,6 +148,8 @@ void UMenuUserWidget::HandleClickHostButton()
 
 void UMenuUserWidget::HandleClickJoinButton()
 {
+	JoinButton->SetIsEnabled(false);
+
 	if (!MultiplayerSessionGISubsystem)
 	{
 		return;

@@ -55,6 +55,10 @@ private:
 	IOnlineSessionPtr SessionInterface;
 	TSharedPtr<FOnlineSessionSettings> LastSessionSettings;
 	TSharedPtr<FOnlineSessionSearch> LastSessionSearch;
+	// Session related data
+	bool bCreateSessionAfterDestroy = false;
+	int32 DesiredMaxPlayers;
+	FString DesiredMatchType;
 
 	// SessionInterface Delegate(s) and DelegateHandler(s)
 	FOnCreateSessionCompleteDelegate CreateSessionCompleteDelegate;

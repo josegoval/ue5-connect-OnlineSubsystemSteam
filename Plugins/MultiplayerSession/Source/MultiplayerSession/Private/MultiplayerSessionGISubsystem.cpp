@@ -44,7 +44,10 @@ void UMultiplayerSessionGISubsystem::CreateSession(int32 MaxPlayers, FString Mat
 
 	if (SessionInterface->GetNamedSession(NAME_GameSession))
 	{
-		SessionInterface->DestroySession(NAME_GameSession);
+		bCreateSessionAfterDestroy = true;
+		DesiredMaxPlayers = MaxPlayers;
+		DesiredMatchType = MatchType;
+		return DestroySession();
 	}
 
 	// Set the Delegate
@@ -160,6 +163,18 @@ void UMultiplayerSessionGISubsystem::JoinSession(const FOnlineSessionSearchResul
 
 void UMultiplayerSessionGISubsystem::DestroySession()
 {
+	if (!SessionInterface)
+	{
+		OnDestroySessionDelegate.Broadcast(false);
+		return;
+	}
+	DestroySessionCompleteDelegateHandle = SessionInterface->AddOnDestroySessionCompleteDelegate_Handle(
+		DestroySessionCompleteDelegate);
+	if (!SessionInterface->DestroySession(NAME_GameSession))
+	{
+		SessionInterface->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionCompleteDelegateHandle);
+		OnDestroySessionDelegate.Broadcast(false);
+	}
 }
 
 void UMultiplayerSessionGISubsystem::StartSession()
@@ -213,6 +228,19 @@ void UMultiplayerSessionGISubsystem::OnJoinSessionComplete(FName SessionName, EO
 
 void UMultiplayerSessionGISubsystem::OnDestroySessionComplete(FName SessionName, bool bWasSuccessful)
 {
+	if (!SessionInterface)
+	{
+		OnDestroySessionDelegate.Broadcast(false);
+		return;
+	}
+
+	SessionInterface->ClearOnDestroySessionCompleteDelegate_Handle(DestroySessionCompleteDelegateHandle);
+	OnDestroySessionDelegate.Broadcast(bWasSuccessful);
+	if (bCreateSessionAfterDestroy)
+	{
+		bCreateSessionAfterDestroy = false;
+		CreateSession(DesiredMaxPlayers, DesiredMatchType);
+	}
 }
 
 void UMultiplayerSessionGISubsystem::OnStartSessionComplete(FName SessionName, bool bWasSuccessful)
